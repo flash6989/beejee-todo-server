@@ -1,4 +1,3 @@
-const jwt = require('jsonwebtoken')
 const decodedToken = require('./helpers/decodedToken')
 
 module.exports = function (req, res, next) {

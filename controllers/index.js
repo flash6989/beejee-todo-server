@@ -10,18 +10,19 @@ const generateJwt = (id, login, roles ) => {
  return jwt.sign({ id, login, roles }, process.env.SECRET_KEY, {expiresIn: '24h'})
 }
 
-async function getTasks(req, res, next){
-  let { userId, limit, page } = req.query
+async function fetchTasks(req, res, next){
+  let {limit, page, filter} = req.query
+  console.log(limit, page, filter, 'limit, page, filter')
   page = page || 1
   limit = limit || 3
   let offset = page * limit - limit
-  const tasks = await Task.findAndCountAll({limit, offset})
+  const tasks = await Task.findAndCountAll({limit, offset, order: [[filter.filterName, filter.direction]]} )
   return res.json(tasks)
 }
 async function createTask(req, res, next) {
   try {
     const { text, userName, email } = req.body
-    console.log(text)
+    console.log(text, userName, email)
     const task = await Task.create({ text, userName, email })
     console.log('createTask')
     res.json(task)
@@ -29,10 +30,16 @@ async function createTask(req, res, next) {
     next(ApiError.badRequest(e.message))
   }
 }
-function changeTask(req, res) {
-
-  console.log('changeTask')
-  res.json()
+async function changeTask(req, res) {
+  console.log(req.body)
+  const {id, text} = req.body
+  const task = await Task.update({ text, whoEdited: 'admin' }, {
+    where: {
+      id
+    }
+  });
+  console.log(task, 'changeTask')
+  res.json({message: 'Запись успешно отредактирована'})
 
 }
 async function login(req, res, next) {
@@ -79,11 +86,16 @@ async function registration(req, res, next) {
   
 }
 
-function checkAuth(req, res, ) {
-  const token = generateJwt(req.user.id, req.user.login, req.user.roles)
+function checkAuth(req, res) {
+  const tokenReq = req.headers.authorization
+  if(!tokenReq) {
+    next(ApiError(''))
+  }
+  const decoded = jwt.verify(tokenReq.split(' ')[1], process.env.SECRET_KEY);
+  const token = generateJwt(decoded.id, decoded.login, decoded.roles)
   return res.json({token})
 }
 
 module.exports = {
-  getTasks, createTask, changeTask, login, registration
+  fetchTasks, createTask, changeTask, login, registration, checkAuth
 }

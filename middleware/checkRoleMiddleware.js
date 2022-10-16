@@ -9,7 +9,7 @@ module.exports = function(role) {
     }
     try {
       const decoded = decodedToken(req.headers.authorization)
-      if (decoded.role !== role) {
+      if (decoded.roles[0] !== role) {
         res.status(401).json({message: 'Нет доступа'})
       }
       req.user = decoded

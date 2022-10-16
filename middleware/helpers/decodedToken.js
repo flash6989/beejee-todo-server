@@ -1,3 +1,5 @@
+const jwt = require('jsonwebtoken')
+
 module.exports = function (bearer) {
   const token = bearer.split(' ')[1]
   if (!token) {
