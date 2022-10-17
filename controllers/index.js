@@ -80,6 +80,29 @@ async function changeStatusTask(req, res) {
   res.json({message: 'Задача отмечена как "Не выполнено"'})
 }
 
+async function registration(req, res, next) {
+  try {
+    const errors = validationResult(req)
+
+    if(!errors.isEmpty()) {
+      return res.status(400).json({ message: 'Ошибка при регистрации', errors})
+    }
+
+    const { password, roles, login } = req.body
+    const isFindUser = await User.findOne({where: {login}})
+
+    if( isFindUser ) {
+      return next(ApiError.badRequest('Пользователь с таким логином уже существует'))
+    }
+
+    const hashPassword = await bcrypt.hash(password, 5)
+    const user = await User.create({ password: hashPassword, roles, login })
+    const token = generateJwt(user.id, user.login, user.roles)
+    res.json({token})
+  } catch(e) {
+    next(ApiError.badRequest(e.message))
+  }
+}
 module.exports = {
-  fetchTasks, createTask, changeTask, login, checkAuth, changeStatusTask
+  fetchTasks, createTask, changeTask, login, checkAuth, changeStatusTask, registration
 }
